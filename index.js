@@ -3,6 +3,10 @@ import path from "path";
 import { registerdata } from "./form.model.js";
 import { config } from "dotenv";
 import mongoose from "mongoose";
+import cookieParser from "cookie-parser";
+import  jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { login, logout, registration } from "./controllers/user.js";
 
 
 const app = express();
@@ -20,41 +24,56 @@ mongoose.connect(process.env.MONGODB_URI, {
 //  MIDDLEWARES 
 
 app.use(express.urlencoded({extended: true}));
+app.use(cookieParser())
 
 
-app.get("/", async(req, res)=>{
+// we have to set engine
+app.set("view engine" , "ejs")
+
+
+const isAuthenticated = async(req, res, next)=>{
+
+    const {token} = req.cookies ;
+
+    if(token){
+      const decoded =  jwt.verify(token, process.env.TOKEN_PRIVATE_KEY)   // decoded will get two things _id and iat
+
+     req.user = await registerdata.findById(decoded._id)
+    //  console.log(req.user)
+
+        next();
+    }
+    else{
+        res.redirect("/login");
+    }
+
+}
+
+app.get("/",isAuthenticated, async(req, res)=>{
     
+    res.render("logout",{name: req.user.name})
     // console.log(pathloc)
-   await registerdata.create({name : "shivam", email : "s@gmail.com", password : "shdfsdlkf"})
-   res.send("done")
+//    await registerdata.create({name : "shivam", email : "s@gmail.com", password : "shdfsdlkf"})
+//    res.send("done")
+    // console.log(req.cookies.token)
 
+    
 })
+
+app.get("/login", (req, res)=>{
+    res.render("login")
+})
+
+app.post("/login",login)
+
+app.get("/logout", logout )
 
 app.get("/register", (req, res)=>{
     res.render("register")
 })
 
-app.get("/added", (req, res)=>{
-    res.render("added")
-})
+app.post("/register",registration )
 
-app.post("/register", async(req, res)=>{
-    const {name , email, password} = req.body;
-
-   await registerdata.create({
-        name:name,
-        email: email,
-        password: password,
-    })
-
-    res.redirect("/added")
-})
-// we have to set engine
-app.set("view engine" , "ejs")
-
-app.get("/ejs", (req, res)=>{
-    res.render("index", {msg : "hello from index.js"})
-})
 
 app.listen(process.env.PORT, ()=>{
     console.log(`app is listening at port ${process.env.PORT}`)
