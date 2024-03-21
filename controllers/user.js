@@ -74,11 +74,11 @@ export const login = async (req, res) => {
 
 }
 
-export const logout = (req, res)=>{
+export const logout = (req, res) => {
 
-    res.cookie("token", null,{
+    res.cookie("token", null, {
         httpOnly: true,              // best security practice 
-        expires : new Date(Date.now())  // expires now to remove token immediately
+        expires: new Date(Date.now())  // expires now to remove token immediately
     })
-     res.redirect("/")
+    res.redirect("/")
 }
